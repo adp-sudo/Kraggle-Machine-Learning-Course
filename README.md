@@ -2,7 +2,7 @@
 
 This repository contains all completed coursework, certificates, competition submissions, notebooks, and code for the ML Division tasks.
 
-All proofs of completion and related files can be found inside their respective folders.
+**All proofs of completion and related files can be found inside their respective folders.**
 
 ## Certificates
 
