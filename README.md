@@ -9,3 +9,5 @@ This repository contains all completed coursework, certificates, competition sub
 ### Intro to Machine Learning
 ![Certificate](Intro%20To%20Machine%20Learning/Aayush%20Deshpande%20-%20Intro%20to%20Machine%20Learning.png)
 
+### Intro to Deep Learning
+![certi2](Intro%20to%20Deep%20Learning/certificate.png)
