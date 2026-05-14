@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>8×8 Binary Grid Drawer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0f0f0f;
+      --surface:  #1a1a1a;
+      --border:   #2e2e2e;
+      --border-2: #3e3e3e;
+      --text:     #e8e8e8;
+      --muted:    #888;
+      --pixel-on: #e8e8e8;
+      --pixel-off:#222;
+      --accent:   #4f8ef7;
+      --radius:   8px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Courier New', Courier, monospace;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: 14px;
+      padding: 2rem 2.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      width: fit-content;
+    }
+
+    header { display: flex; align-items: baseline; gap: 12px; }
+    header h1 { font-size: 15px; font-weight: 600; letter-spacing: 0.06em; color: var(--text); }
+    header p  { font-size: 11px; color: var(--muted); letter-spacing: 0.04em; }
+
+    #grid-wrap {
+      display: grid;
+      grid-template-columns: repeat(8, 40px);
+      grid-template-rows:    repeat(8, 40px);
+      gap: 4px;
+      user-select: none;
+      cursor: crosshair;
+    }
+
+    .cell {
+      width: 40px; height: 40px;
+      border-radius: 5px;
+      border: 0.5px solid var(--border-2);
+      background: var(--pixel-off);
+      transition: background 0.05s;
+    }
+    .cell.on {
+      background: var(--pixel-on);
+      border-color: transparent;
+      box-shadow: 0 0 6px rgba(232,232,232,0.18);
+    }
+
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .meta span { color: var(--text); font-weight: 600; }
+
+    #output-box {
+      background: #111;
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.75rem 1rem;
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.9;
+      word-break: break-all;
+      max-width: 356px;
+    }
+    #output-box strong {
+      display: block;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    #arr-val { color: var(--accent); }
+
+    .btn-row { display: flex; gap: 8px; }
+
+    button {
+      background: transparent;
+      border: 0.5px solid var(--border-2);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 12px;
+      padding: 7px 14px;
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      position: relative;
+    }
+    button:hover  { background: #242424; border-color: #555; }
+    button:active { transform: scale(0.97); }
+
+    #copy-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+    #clear-btn svg, #invert-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+
+    #copied-toast {
+      position: absolute;
+      top: -34px; left: 50%;
+      transform: translateX(-50%);
+      background: #222;
+      border: 0.5px solid var(--border-2);
+      border-radius: 6px;
+      padding: 3px 10px;
+      font-size: 11px;
+      white-space: nowrap;
+      color: #aef;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    #copied-toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <header>
+    <h1>8×8 Grid Drawer</h1>
+    <p>click or drag to paint</p>
+  </header>
+
+  <div id="grid-wrap"></div>
+
+  <div class="meta">
+    <div>active pixels: <span id="px-count">0</span> / 64</div>
+  </div>
+
+  <div id="output-box">
+    <strong>64-element array</strong>
+    <span id="arr-val"></span>
+  </div>
+
+  <div class="btn-row">
+    <button id="copy-btn" onclick="copyArr()">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      copy array
+      <span id="copied-toast">copied!</span>
+    </button>
+    <button id="clear-btn" onclick="clearGrid()">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+      clear
+    </button>
+    <button id="invert-btn" onclick="invertGrid()">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
+      invert
+    </button>
+  </div>
+</div>
+
+<script>
+  const state = new Array(64).fill(0);
+  let painting = false;
+  let paintVal = 1;
+
+  const wrap = document.getElementById('grid-wrap');
+
+  for (let i = 0; i < 64; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.dataset.i = i;
+
+    cell.addEventListener('mousedown', e => {
+      e.preventDefault();
+      painting = true;
+      paintVal = state[i] === 0 ? 1 : 0;
+      toggle(i, paintVal);
+    });
+    cell.addEventListener('mouseenter', () => {
+      if (painting) toggle(i, paintVal);
+    });
+    cell.addEventListener('touchstart', e => {
+      e.preventDefault();
+      painting = true;
+      paintVal = state[i] === 0 ? 1 : 0;
+      toggle(i, paintVal);
+    }, { passive: false });
+    cell.addEventListener('touchmove', e => {
+      e.preventDefault();
+      const t = e.touches[0];
+      const el = document.elementFromPoint(t.clientX, t.clientY);
+      if (el && el.dataset.i !== undefined) toggle(+el.dataset.i, paintVal);
+    }, { passive: false });
+
+    wrap.appendChild(cell);
+  }
+
+  document.addEventListener('mouseup', () => painting = false);
+  document.addEventListener('touchend', () => painting = false);
+
+  function toggle(i, val) {
+    if (state[i] === val) return;
+    state[i] = val;
+    wrap.children[i].classList.toggle('on', val === 1);
+    updateOutput();
+  }
+
+  function updateOutput() {
+    document.getElementById('px-count').textContent = state.filter(v => v === 1).length;
+    document.getElementById('arr-val').textContent = '[' + state.join(', ') + ']';
+  }
+
+  function clearGrid() {
+    for (let i = 0; i < 64; i++) toggle(i, 0);
+  }
+
+  function invertGrid() {
+    for (let i = 0; i < 64; i++) toggle(i, state[i] === 0 ? 1 : 0);
+  }
+
+  function copyArr() {
+    navigator.clipboard.writeText('[' + state.join(', ') + ']').then(() => {
+      const t = document.getElementById('copied-toast');
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 1500);
+    });
+  }
+
+  updateOutput();
+</script>
+</body>
+</html>
