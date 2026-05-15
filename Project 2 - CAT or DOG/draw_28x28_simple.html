@@ -1,0 +1,86 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.wrap{padding:1.5rem 1rem;display:flex;flex-direction:column;align-items:center;gap:1rem;font-family:var(--font-mono)}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center}
+button{padding:6px 16px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);font-family:var(--font-mono);font-size:12px;cursor:pointer}
+button:hover{background:var(--color-background-secondary)}
+button.on{background:var(--color-text-primary);color:var(--color-background-primary)}
+canvas{border:1px solid var(--color-border-primary);cursor:crosshair;touch-action:none;display:block}
+.out{width:100%;max-width:520px;display:none}
+.lbl{font-size:11px;color:var(--color-text-tertiary);letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}
+.box{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:10px 12px;font-size:11px;line-height:1.7;color:var(--color-text-secondary);word-break:break-all;max-height:180px;overflow-y:auto;white-space:pre-wrap}
+.acts{display:flex;gap:6px;margin-top:7px}
+</style>
+
+<div class="wrap">
+  <h2 class="sr-only">28×28 pixel canvas — draw, erase, export</h2>
+  <div class="bar">
+    <button id="b-draw" class="on" onclick="setPen(256,'draw')">⬜ Draw</button>
+    <button id="b-erase" onclick="setPen(0,'erase')">⬛ Erase</button>
+    <button onclick="clearCanvas()">Clear</button>
+    <button onclick="doExport()">Export array</button>
+  </div>
+  <canvas id="c" width="504" height="504"></canvas>
+  <div class="out" id="out">
+    <div class="lbl">28 × 28 array — 0 black · 256 white</div>
+    <div class="box" id="box"></div>
+    <div class="acts">
+      <button onclick="copy2d()">Copy 2D</button>
+      <button onclick="copy1d()">Copy flat</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const CELLS=28,canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+const SZ=canvas.width/CELLS;
+let grid=Array(CELLS*CELLS).fill(0),drawing=false,penVal=256;
+
+function draw(){
+  for(let r=0;r<CELLS;r++) for(let c=0;c<CELLS;c++){
+    ctx.fillStyle=grid[r*CELLS+c]===256?'#ffffff':'#111111';
+    ctx.fillRect(c*SZ,r*SZ,SZ,SZ);
+  }
+  ctx.strokeStyle='#333';ctx.lineWidth=0.5;
+  for(let i=0;i<=CELLS;i++){
+    ctx.beginPath();ctx.moveTo(i*SZ,0);ctx.lineTo(i*SZ,canvas.height);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,i*SZ);ctx.lineTo(canvas.width,i*SZ);ctx.stroke();
+  }
+}
+
+function paint(e){
+  const t=e.touches?e.touches[0]:e,b=canvas.getBoundingClientRect();
+  const col=Math.floor((t.clientX-b.left)/SZ),row=Math.floor((t.clientY-b.top)/SZ);
+  if(col<0||col>=CELLS||row<0||row>=CELLS)return;
+  grid[row*CELLS+col]=penVal;draw();
+}
+
+canvas.addEventListener('mousedown',e=>{drawing=true;paint(e);e.preventDefault()});
+canvas.addEventListener('mousemove',e=>{if(drawing)paint(e)});
+document.addEventListener('mouseup',()=>drawing=false);
+canvas.addEventListener('touchstart',e=>{drawing=true;paint(e);e.preventDefault()},{passive:false});
+canvas.addEventListener('touchmove',e=>{if(drawing)paint(e);e.preventDefault()},{passive:false});
+document.addEventListener('touchend',()=>drawing=false);
+
+function setPen(v,id){
+  penVal=v;
+  document.getElementById('b-draw').classList.toggle('on',id==='draw');
+  document.getElementById('b-erase').classList.toggle('on',id==='erase');
+}
+function clearCanvas(){grid.fill(0);draw();document.getElementById('out').style.display='none';}
+function doExport(){
+  const rows=[];
+  for(let r=0;r<CELLS;r++)rows.push('['+grid.slice(r*CELLS,r*CELLS+CELLS).join(', ')+']');
+  document.getElementById('box').textContent='[\n  '+rows.join(',\n  ')+'\n]';
+  document.getElementById('out').style.display='block';
+}
+function copy2d(){
+  const rows=[];
+  for(let r=0;r<CELLS;r++)rows.push('['+grid.slice(r*CELLS,r*CELLS+CELLS).join(', ')+']');
+  navigator.clipboard.writeText('[\n  '+rows.join(',\n  ')+'\n]');
+}
+function copy1d(){navigator.clipboard.writeText('['+grid.join(', ')+']');}
+
+draw();
+</script>
