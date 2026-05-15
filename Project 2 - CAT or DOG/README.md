@@ -53,8 +53,7 @@ The model will not work unless both datasets are downloaded and loaded correctly
 - Keras
 - TensorFlow
 - NumPy
-- HTML
-- JavaScript
+
 
 ---
 
